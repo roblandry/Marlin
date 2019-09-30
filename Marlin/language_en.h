@@ -67,6 +67,9 @@
 #ifndef MSG_DISABLE_STEPPERS
   #define MSG_DISABLE_STEPPERS                _UxGT("Disable steppers")
 #endif
+#ifndef MSG_DISABLE_STEPPERS_XY
+  #define MSG_DISABLE_STEPPERS_XY             _UxGT("Disable steppers XY axis")
+#endif
 #ifndef MSG_DEBUG_MENU
   #define MSG_DEBUG_MENU                      _UxGT("Debug Menu")
 #endif

@@ -2677,6 +2677,32 @@ void lcd_quick_feedback(const bool clear_buttons) {
 
   #endif // LCD_BED_LEVELING
 
+  // Added for Ender-5
+  // lcd auto home
+  static void lcd_autohome()
+  {
+    enqueue_and_echo_commands_P(PSTR("G28")); // move all axis home
+
+    disable_X();
+    disable_Y();
+  }
+
+  void disable_xy_steppers()
+  {
+    disable_X();
+    disable_Y();
+  }
+
+  static void lcd_disable_steppers() 
+  {
+    START_MENU();
+    MENU_ITEM(back, MSG_PREPARE, lcd_prepare_menu);
+    MENU_ITEM(function, MSG_DISABLE_STEPPERS_XY, disable_xy_steppers);
+    MENU_ITEM(gcode, MSG_DISABLE_STEPPERS, PSTR("M84"));
+    END_MENU();
+  }
+  // End Ender-5 Section
+
   /**
    *
    * "Prepare" submenu
@@ -2760,7 +2786,8 @@ void lcd_quick_feedback(const bool clear_buttons) {
     //
     // Disable Steppers
     //
-    MENU_ITEM(gcode, MSG_DISABLE_STEPPERS, PSTR("M84"));
+    //MENU_ITEM(gcode, MSG_DISABLE_STEPPERS, PSTR("M84"));
+    MENU_ITEM(submenu, MSG_DISABLE_STEPPERS, lcd_disable_steppers);
 
     //
     // Change filament

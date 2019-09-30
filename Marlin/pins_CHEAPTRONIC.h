@@ -29,6 +29,8 @@
 #endif
 
 #define BOARD_NAME         "Cheaptronic v1.0"
+#define LARGE_FLASH        true
+
 //
 // Limit Switches
 //
@@ -69,8 +71,8 @@
 //
 // Heaters / Fans
 //
-#define HEATER_0_PIN       19   // EXTRUDER 1
-#define HEATER_1_PIN       23   // EXTRUDER 2
+#define HEATER_0_PIN       19 // EXTRUDER 1
+#define HEATER_1_PIN       23 // EXTRUDER 2
 #define HEATER_BED_PIN     22
 
 //

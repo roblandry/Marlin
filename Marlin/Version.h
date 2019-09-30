@@ -35,20 +35,20 @@
   /**
    * Marlin release version identifier
    */
-  #define SHORT_BUILD_VERSION "1.1.9"
+  #define SHORT_BUILD_VERSION "1.1.6.1"
 
   /**
    * Verbose version identifier which should contain a reference to the location
    * from where the binary was downloaded or the source code was compiled.
    */
-  #define DETAILED_BUILD_VERSION SHORT_BUILD_VERSION " (Github)"
+  #define DETAILED_BUILD_VERSION "Creality 3D"
 
   /**
    * The STRING_DISTRIBUTION_DATE represents when the binary file was built,
    * here we define this default string as the date where the latest release
    * version was tagged.
    */
-  #define STRING_DISTRIBUTION_DATE "2018-08-01"
+  #define STRING_DISTRIBUTION_DATE "2018-11-28"
 
   /**
    * Required minimum Configuration.h and Configuration_adv.h file versions.
@@ -57,8 +57,8 @@
    * but not limited to: ADD, DELETE RENAME OR REPURPOSE any directive/option on
    * the configuration files.
    */
-  #define REQUIRED_CONFIGURATION_H_VERSION 010109
-  #define REQUIRED_CONFIGURATION_ADV_H_VERSION 010109
+  #define REQUIRED_CONFIGURATION_H_VERSION 010100
+  #define REQUIRED_CONFIGURATION_ADV_H_VERSION 010100
 
   /**
    * The protocol for communication to the host. Protocol indicates communication
@@ -89,6 +89,6 @@
    * The WEBSITE_URL is the location where users can get more information such as
    * documentation about a specific Marlin release.
    */
-  #define WEBSITE_URL "http://marlinfw.org"
+  #define WEBSITE_URL "www.creality3d.cn"
 
 #endif // USE_AUTOMATIC_VERSIONING

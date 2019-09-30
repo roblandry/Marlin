@@ -30,10 +30,9 @@
   #error "Oops!  Make sure you have 'Arduino Mega' selected from the 'Tools -> Boards' menu."
 #endif
 
-#ifndef BOARD_NAME
-  #define BOARD_NAME "GT2560 Rev.A"
-#endif
+#define BOARD_NAME           "GT2560 Rev.A"
 #define DEFAULT_MACHINE_NAME "Prusa i3 Pro B"
+#define LARGE_FLASH true
 
 //
 // Limit Switches
@@ -81,9 +80,7 @@
 #define HEATER_0_PIN        2
 #define HEATER_1_PIN        3
 #define HEATER_BED_PIN      4
-#ifndef FAN_PIN
-  #define FAN_PIN           7
-#endif
+#define FAN_PIN             7
 
 //
 // Misc. Functions
@@ -92,7 +89,7 @@
 #define SDSS               53
 #define LED_PIN            13
 #define PS_ON_PIN          12
-#define SUICIDE_PIN        54   // Must be enabled at startup to keep power flowing
+#define SUICIDE_PIN        54  // Must be enabled at startup to keep power flowing
 #define KILL_PIN           -1
 
 #if ENABLED(ULTRA_LCD)
@@ -101,23 +98,18 @@
 
   #if ENABLED(NEWPANEL)
 
-    #if ENABLED(MKS_MINI_12864)
-      #define DOGLCD_A0     5
-      #define DOGLCD_CS    21
-      #define BTN_EN1      40
-      #define BTN_EN2      42
-    #else
-      #define LCD_PINS_RS  20
-      #define LCD_PINS_ENABLE 17
-      #define LCD_PINS_D4  16
-      #define LCD_PINS_D5  21
-      #define LCD_PINS_D6   5
-      #define LCD_PINS_D7   6
-      #define BTN_EN1      42
-      #define BTN_EN2      40
-    #endif
+    #define LCD_PINS_RS    20
+    #define LCD_PINS_ENABLE 17
+    #define LCD_PINS_D4    16
+    #define LCD_PINS_D5    21
+    #define LCD_PINS_D6     5
+    #define LCD_PINS_D7     6
 
+    // Buttons are directly attached
+    #define BTN_EN1        42
+    #define BTN_EN2        40
     #define BTN_ENC        19
+
     #define SD_DETECT_PIN  38
 
   #else // !NEWPANEL

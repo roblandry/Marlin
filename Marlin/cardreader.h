@@ -20,18 +20,19 @@
  *
  */
 
-#ifndef _CARDREADER_H_
-#define _CARDREADER_H_
+#ifndef CARDREADER_H
+#define CARDREADER_H
 
 #include "MarlinConfig.h"
 
 #if ENABLED(SDSUPPORT)
 
-#define SD_RESORT ENABLED(SDCARD_SORT_ALPHA) && ENABLED(SDSORT_DYNAMIC_RAM)
-
 #define MAX_DIR_DEPTH 10          // Maximum folder depth
 
 #include "SdFile.h"
+
+#include "types.h"
+#include "enum.h"
 
 class CardReader {
 public:
@@ -39,25 +40,28 @@ public:
 
   void initsd();
   void write_command(char *buf);
+  //files auto[0-9].g on the sd card are performed in a row
+  //this is to delay autostart and hence the initialisaiton of the sd card to some seconds after the normal init, so the device is available quick after a reset
 
-  void beginautostart();
-  void checkautostart();
-
-  void openFile(char * const path, const bool read, const bool subcall=false);
-  void openLogFile(char * const path);
-  void removeFile(const char * const name);
-  void closefile(const bool store_location=false);
+  void checkautostart(bool x);
+  void openFile(char* name, bool read, bool push_current=false);
+  void openLogFile(char* name);
+  #if ENABLED(POWEROFF_SAVE_SD_FILE)
+    void openPowerOffFile(char* name, uint8_t oflag);
+    void closePowerOffFile();
+    bool existPowerOffFile(char* name);
+    int16_t savePowerOffInfo(const void* data, uint16_t size);
+    int16_t getPowerOffInfo(void* data, uint16_t size);
+    void removePowerOffFile();
+  #endif
+  void removeFile(char* name);
+  void closefile(bool store_location=false);
   void release();
   void openAndPrintFile(const char *name);
   void startFileprint();
-  void stopSDPrint(
-    #if SD_RESORT
-      const bool re_sort=false
-    #endif
-  );
+  void stopSDPrint();
   void getStatus();
   void printingHasFinished();
-  void printFilename();
 
   #if ENABLED(LONG_FILENAME_HOST_SUPPORT)
     void printLongPath(char *path);
@@ -70,12 +74,8 @@ public:
 
   void ls();
   void chdir(const char *relpath);
-  int8_t updir();
+  void updir();
   void setroot();
-
-  const char* diveToFile(SdFile*& curDir, const char * const path, const bool echo);
-
-  uint16_t get_num_Files();
 
   #if ENABLED(SDCARD_SORT_ALPHA)
     void presort();
@@ -87,41 +87,22 @@ public:
     #endif
   #endif
 
-  #if ENABLED(POWER_LOSS_RECOVERY)
-    void openJobRecoveryFile(const bool read);
-    void closeJobRecoveryFile();
-    bool jobRecoverFileExists();
-    int16_t saveJobRecoveryInfo();
-    int16_t loadJobRecoveryInfo();
-    void removeJobRecoveryFile();
-  #endif
-
   FORCE_INLINE void pauseSDPrint() { sdprinting = false; }
   FORCE_INLINE bool isFileOpen() { return file.isOpen(); }
   FORCE_INLINE bool eof() { return sdpos >= filesize; }
   FORCE_INLINE int16_t get() { sdpos = file.curPosition(); return (int16_t)file.read(); }
-  FORCE_INLINE void setIndex(const uint32_t index) { sdpos = index; file.seekSet(index); }
+  FORCE_INLINE void setIndex(long index) { sdpos = index; file.seekSet(index); }
   FORCE_INLINE uint32_t getIndex() { return sdpos; }
+  // FORCE_INLINE char* getCurrentPrintFileName() { return filenames[file_subcall_ctr]; }
   FORCE_INLINE uint8_t percentDone() { return (isFileOpen() && filesize) ? sdpos / ((filesize + 99) / 100) : 0; }
   FORCE_INLINE char* getWorkDirName() { workDir.getFilename(filename); return filename; }
 
-  #if ENABLED(AUTO_REPORT_SD_STATUS)
-    void auto_report_sd_status(void);
-    FORCE_INLINE void set_auto_report_interval(uint8_t v) {
-      NOMORE(v, 60);
-      auto_report_sd_interval = v;
-      next_sd_report_ms = millis() + 1000UL * v;
-    }
-  #endif
-
-  FORCE_INLINE char* longest_filename() { return longFilename[0] ? longFilename : filename; }
-
 public:
-  bool saving, logging, sdprinting, cardOK, filenameIsDir, abort_sd_printing;
+  bool saving, logging, sdprinting, cardOK, filenameIsDir;
   char filename[FILENAME_LENGTH], longFilename[LONG_FILENAME_LENGTH];
-  int8_t autostart_index;
+  int autostart_index;
 private:
-  SdFile root, workDir, workDirParents[MAX_DIR_DEPTH];
+  SdFile root, *curDir, workDir, workDirParents[MAX_DIR_DEPTH];
   uint8_t workDirDepth;
 
   // Sort files and folders alphabetically.
@@ -140,12 +121,6 @@ private:
       uint8_t sort_order[SDSORT_LIMIT];
     #endif
 
-    #if ENABLED(SDSORT_USES_RAM) && ENABLED(SDSORT_CACHE_NAMES) && DISABLED(SDSORT_DYNAMIC_RAM)
-      #define SORTED_LONGNAME_MAXLEN ((SDSORT_CACHE_VFATS) * (FILENAME_LENGTH) + 1)
-    #else
-      #define SORTED_LONGNAME_MAXLEN LONG_FILENAME_LENGTH
-    #endif
-
     // Cache filenames to speed up SD menus.
     #if ENABLED(SDSORT_USES_RAM)
 
@@ -155,10 +130,10 @@ private:
           char **sortshort, **sortnames;
         #else
           char sortshort[SDSORT_LIMIT][FILENAME_LENGTH];
-          char sortnames[SDSORT_LIMIT][SORTED_LONGNAME_MAXLEN];
+          char sortnames[SDSORT_LIMIT][LONG_FILENAME_LENGTH];
         #endif
       #elif DISABLED(SDSORT_USES_STACK)
-        char sortnames[SDSORT_LIMIT][SORTED_LONGNAME_MAXLEN];
+        char sortnames[SDSORT_LIMIT][LONG_FILENAME_LENGTH];
       #endif
 
       // Folder sorting uses an isDir array when caching items.
@@ -174,12 +149,11 @@ private:
 
   #endif // SDCARD_SORT_ALPHA
 
-  Sd2Card sd2card;
+  Sd2Card card;
   SdVolume volume;
   SdFile file;
-
-  #if ENABLED(POWER_LOSS_RECOVERY)
-    SdFile jobRecoveryFile;
+  #if ENABLED(POWEROFF_SAVE_SD_FILE)
+    SdFile powerOffFile;
   #endif
 
   #define SD_PROCEDURE_DEPTH 1
@@ -187,7 +161,11 @@ private:
   uint8_t file_subcall_ctr;
   uint32_t filespos[SD_PROCEDURE_DEPTH];
   char proc_filenames[SD_PROCEDURE_DEPTH][MAXPATHNAMELENGTH];
-  uint32_t filesize, sdpos;
+  uint32_t filesize;
+  uint32_t sdpos;
+
+  millis_t next_autostart_ms;
+  bool autostart_stilltocheck; //the sd start is delayed, because otherwise the serial cannot answer fast enought to make contact with the hostsoftware.
 
   LsAction lsAction; //stored for recursion.
   uint16_t nrFiles; //counter for the files in the current directory and recycled as position counter for getting the nrFiles'th name in the directory.
@@ -197,34 +175,61 @@ private:
   #if ENABLED(SDCARD_SORT_ALPHA)
     void flush_presort();
   #endif
-
-  #if ENABLED(AUTO_REPORT_SD_STATUS)
-    static uint8_t auto_report_sd_interval;
-    static millis_t next_sd_report_ms;
-  #endif
 };
+
+extern CardReader card;
+#if ENABLED(POWEROFF_SAVE_SD_FILE)
+struct power_off_info_t
+{
+  /* header (1B + 7B = 8B) */
+  uint8_t valid_head;
+  // uint8_t reserved1[8-1];
+  /* Gcode related information. (44B + 20B = 64B) */
+  float current_position[NUM_AXIS];
+  float feedrate;
+  float saved_z;
+  int target_temperature[HOTENDS];
+  int target_temperature_bed;
+  // uint8_t reserved2[64-44];
+  /* print queue related information. (396B + 116B = 512B) */
+  int cmd_queue_index_r;
+  int cmd_queue_index_w;
+  int commands_in_queue;
+  char command_queue[BUFSIZE][MAX_CMD_SIZE];
+  // uint8_t reserved3[512-396];
+  /* SD card related information. (165B + 91B = 256B)*/
+  uint32_t sdpos;
+  millis_t print_job_start_ms;
+  char sd_filename[MAXPATHNAMELENGTH];
+  char power_off_filename[16];
+  // uint8_t reserved4[256-166];
+  uint8_t valid_foot;
+};
+
+extern struct power_off_info_t power_off_info;
+extern int power_off_commands_count;
+extern int power_off_type_yes;
+#endif
+
+#define IS_SD_PRINTING (card.sdprinting)
+#define IS_SD_FILE_OPEN (card.isFileOpen())
 
 #if PIN_EXISTS(SD_DETECT)
   #if ENABLED(SD_DETECT_INVERTED)
-    #define IS_SD_INSERTED()  READ(SD_DETECT_PIN)
+    #define IS_SD_INSERTED (READ(SD_DETECT_PIN) != 0)
   #else
-    #define IS_SD_INSERTED() !READ(SD_DETECT_PIN)
+    #define IS_SD_INSERTED (READ(SD_DETECT_PIN) == 0)
   #endif
 #else
-  // No card detect line? Assume the card is inserted.
-  #define IS_SD_INSERTED() true
+  //No card detect line? Assume the card is inserted.
+  #define IS_SD_INSERTED true
 #endif
 
-extern CardReader card;
+#else
+
+#define IS_SD_PRINTING (false)
+#define IS_SD_FILE_OPEN (false)
 
 #endif // SDSUPPORT
 
-#if ENABLED(SDSUPPORT)
-  #define IS_SD_PRINTING()  card.sdprinting
-  #define IS_SD_FILE_OPEN() card.isFileOpen()
-#else
-  #define IS_SD_PRINTING()  false
-  #define IS_SD_FILE_OPEN() false
-#endif
-
-#endif // _CARDREADER_H_
+#endif // __CARDREADER_H
